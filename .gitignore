@@ -1,0 +1,9 @@
+# Ignorar caché y autenticación de whatsapp-web.js
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Ignorar dependencias instaladas
+node_modules/
+
+# Opcionalmente, puedes ignorar el archivo de lock si no quieres mantener las versiones exactas de dependencias
+package-lock.json
