@@ -1,5 +1,7 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal'); // Importa qrcode-terminal
+const qrcode = require('qrcode-terminal');
+const { botApostilla } = require('./botApostilla');
+const Simulaciones = require('./simulacion');
 
 // Inicializa el cliente
 const client = new Client({
@@ -19,23 +21,27 @@ client.on('ready', () => {
     console.log('¡El cliente de WhatsApp está listo!');
 });
 
-
-// Diccionario para mantener el estado de las conversaciones y ultimo msj
-let clientStates = {};
-
-// Evento que se dispara cuando se recibe un mensaje
-client.on('message', async msg => {
-
-    const mediosDePago = `Medios de pago
+const mediosDePago = `Medios de pago
 Bancolombia cuenta de ahorros 05360360654 
 Nequi - Daviplata 3213162622
 Cesar Sierra
 
 _pd. enviar comprobante de pago_`;
 
+
+
+// Diccionario para mantener el estado de las conversaciones y ultimo msj
+let clientStates = {};
+
+// Evento que se dispara cuando se recibe un mensaje
+client.on('message', async msg => {
+    // Obtener el chat y el contacto de la conversación actual
     const chat = await msg.getChat();
     const contact = await msg.getContact();
     const name = contact.pushname ? contact.pushname.split(" ")[0] : 'Usuario'; // Si no hay pushname, usa 'Usuario' por defecto
+
+    //instancia de la clase Simulaciones
+    const simular = new Simulaciones(chat, client, msg, name);
 
 
     // Estado inicial de la conversación si no existe
@@ -45,18 +51,13 @@ _pd. enviar comprobante de pago_`;
 
     let currentState = clientStates[msg.from].step;
 
+
+
     // Si el mensaje contiene alguna palabra clave inicial
     if (currentState === 0 && /interesado|hola|información|buenas|buen|más información|cordial|como estas/i.test(msg.body)) {
-
-        await chat.sendSeen();
-        await delay(3000);
-        await chat.sendStateTyping();
-        await delay(5000);
-        await chat.clearState();
+        await simular.simulacion_corta();
         await client.sendMessage(msg.from, `¡Saludos ${name}! Sea bienvenido a *Apostilla Colombia Traducciones Oficiales*.`);
-        await delay(3000);
-        await chat.sendStateTyping();
-        await delay(3000);
+        await simular.simulacion_media();
         await client.sendMessage(msg.from, `¿Cuéntanos, en qué servicio estás interesado?:
     1. Apostilla de documentos.
     2. Traducciones Oficiales.
@@ -70,63 +71,25 @@ _pd. enviar comprobante de pago_`;
 
     // Procesar la respuesta del menú principal
     if (currentState === 1) {
-        const respuestaMenu = parseInt(msg.body); // Convertir a número la opción
-
-        switch (respuestaMenu) {
-            case 1:
-                await chat.sendSeen();
-                await delay(3000);
-                await chat.sendStateTyping();
-                await delay(5000);
-                await chat.clearState();
-                await client.sendMessage(msg.from, `Indícanos el tipo de documento que vas a apostillar:
-    1. Documentos de universidad
-    2. Documentos de bachillerato
-    3. Antecedentes Judiciales
-    4. Registros Civiles
-    5. Apostilla de documentos en España
-    6. Otro tipo de apostillas.
-    7. volver atras`);
-                clientStates[msg.from].step = 3; // Actualizar el estado para el segundo menú
-                break;
-                
-            case 2:
-                await client.sendMessage(msg.from, 'Traducciones oficiales: ¿Cuál es el idioma del documento que necesitas traducir?');
-                clientStates[msg.from].step = 2; // Actualizar el estado a traducciones oficiales
-                break;
-
-            case 3:
-                await client.sendMessage(msg.from, 'Homologación de títulos en España: Por favor, indícanos el país donde obtuviste tu título.');
-                clientStates[msg.from].step = 2; // Actualizar el estado a homologación de títulos
-                break;
-
-            case 4:
-                await client.sendMessage(msg.from, 'Asesoría Visa de estudiantes en España: ¿En qué parte de España deseas estudiar?');
-                clientStates[msg.from].step = 2; // Actualizar el estado a visa de estudiantes
-                break;
-
-            case 5:
-                await client.sendMessage(msg.from, 'Por favor, indícanos qué otros servicios te interesan.');
-                clientStates[msg.from].step = 2; // Actualizar el estado a otros servicios
-                break;
-            default:
-                await delay(3000);
-                await chat.sendStateTyping();
-                await client.sendMessage(msg.from, `¡${name}! debes seleccionar un opción valida, digite un número del 1 al 5`);
-                break;
-        }
+        await botApostilla(chat, client, msg, clientStates, name);
         return;
     }
 
     // Ejemplo de cómo seguir interactuando según el estado (documentos de apostilla en este caso)
     if (currentState === 2) {
-        await chat.sendSeen();
-        await delay(3000);
-        await chat.sendStateTyping();
-        await delay(5000);
-        await chat.clearState();
-        await client.sendMessage(msg.from, `Vamos a validar la información y en seguida nos pondremos en contacto contigo.`);
-        clientStates[msg.from].step = 0; // Resetear el estado a 0 para la próxima conversación
+
+        if (msg.type === 'image') {
+
+            await simular.simulacion_corta();
+            await client.sendMessage(msg.from, `Vamos a validar la información y en seguida nos pondremos en contacto contigo.`);
+            clientStates[msg.from].step = 0; 
+        } else if (/SALIR/i.test(msg.body)) {
+            await client.sendMessage(msg.from, `Gracias por su visita.`);
+            clientStates[msg.from].step = 0; 
+        } else {
+            await client.sendMessage(msg.from, `Por favor, envía una imagen para continuar.
+o escribe *SALIR* para terminar.`);
+        }
     }
 
     if (currentState === 3) {
@@ -241,6 +204,10 @@ _Los documento de registraduria vienen con un holograma o stiker plateado_.`);
         return;
         
     }
+
+
+
+
 });
 
 // Inicia el cliente
