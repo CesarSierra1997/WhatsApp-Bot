@@ -10,3 +10,9 @@ package-lock.json
 
 # Archivos de entorno
 .env
+
+# Ignore temp files
+.tmp*
+
+# Archivos de entorno
+.env
