@@ -1,33 +1,28 @@
 const express = require('express');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
+const fs = require('fs');
+require('dotenv').config();
 const { botApostilla } = require('./botApostilla');
 const Simulaciones = require('./simulacion');
-require('dotenv').config();
 
-// Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
-// Create a simple web interface for the QR code
-app.get('/', (req, res) => {
-    res.send(`
-        <h1>WhatsApp Bot Server</h1>
-        <p>Estado: ${isClientReady ? 'Conectado' : 'Esperando conexión'}</p>
-        ${qrImageUrl ? `<h2>Escanea este código QR con WhatsApp para iniciar sesión:</h2>
-        <img src="${qrImageUrl}" alt="QR Code">` : ''}
-    `);
-});
-
-// Variables to track client state and QR code image
+// Variables para el estado del cliente y el código QR
 let isClientReady = false;
 let qrImageUrl = '';
 
+// Verifica qué ruta de Chromium está disponible
+let chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium';
+if (!fs.existsSync(chromePath)) chromePath = '/usr/bin/chromium-browser';
+
+// Inicializa cliente de WhatsApp
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
+        executablePath: chromePath,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -40,27 +35,30 @@ const client = new Client({
     }
 });
 
-
-// Función que usamos para crear un delay entre una acción y otra
-const delay = ms => new Promise(res => setTimeout(res, ms));
-
-// Evento que se dispara cuando se recibe un código QR
+// Muestra el código QR en consola y en web
 client.on('qr', async (qr) => {
     console.log('QR Code recibido, generando imagen...');
-    
-    // Generate QR code as a data URL
     qrImageUrl = await qrcode.toDataURL(qr);
-    
-    // Also display in console for local development
-    console.log('Escanea este QR code para iniciar sesión:');
     require('qrcode-terminal').generate(qr, { small: true });
 });
 
-// Evento que se dispara cuando el cliente de WhatsApp está listo
+// Marca el cliente como listo
 client.on('ready', () => {
     console.log('¡El cliente de WhatsApp está listo!');
     isClientReady = true;
 });
+
+// Interfaz web simple para mostrar el código QR
+app.get('/', (req, res) => {
+    res.send(`
+        <h1>WhatsApp Bot Server</h1>
+        <p>Estado: ${isClientReady ? '✅ Conectado' : '⏳ Esperando conexión'}</p>
+        ${qrImageUrl ? `<h2>Escanea este código QR con WhatsApp para iniciar sesión:</h2>
+        <img src="${qrImageUrl}" alt="QR Code">` : '<p>No hay QR disponible aún.</p>'}
+    `);
+});
+
+
 
 // Import all your menu variables and conversation logic from index.js
 const mediosDePago = `Medios de pago
