@@ -23,11 +23,11 @@ app.get('/', (req, res) => {
 let isClientReady = false;
 let qrImageUrl = '';
 
-// Initialize WhatsApp client
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -39,6 +39,7 @@ const client = new Client({
         ],
     }
 });
+
 
 // Función que usamos para crear un delay entre una acción y otra
 const delay = ms => new Promise(res => setTimeout(res, ms));

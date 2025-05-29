@@ -1,10 +1,13 @@
-# Imagen base de Node.js ligera
 FROM node:18-slim
 
-# Instala dependencias del sistema necesarias para Chromium
+# Evita problemas con Puppeteer (porque puppeteer-core no incluye Chromium)
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+# Instala Chromium y dependencias necesarias
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
+    chromium \
     fonts-liberation \
     libappindicator3-1 \
     libasound2 \
@@ -24,21 +27,19 @@ RUN apt-get update && apt-get install -y \
     libgtk-3-0 \
     libxshmfence-dev \
     libgconf-2-4 \
-    --no-install-recommends \
- && apt-get clean && rm -rf /var/lib/apt/lists/*
+    --no-install-recommends && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Crea la carpeta de trabajo
+# Carpeta de trabajo
 WORKDIR /app
 
-# Copia package.json e instala dependencias
+# Copia dependencias y código
 COPY package*.json ./
 RUN npm install
-
-# Copia el resto de la app
 COPY . .
 
-# Expone el puerto (importante para Railway)
+# Expone el puerto (opcional pero útil en Railway)
 EXPOSE 8080
 
-# Inicia la aplicación
+# Inicia la app
 CMD ["npm", "start"]
