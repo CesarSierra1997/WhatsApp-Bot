@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
@@ -11,7 +13,10 @@
   "description": "",
   "dependencies": {
     "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.28.0"
+    "whatsapp-web.js": "^1.28.0",
+    "qrcode": "^1.5.3",
+    "express": "^4.18.2",
+    "dotenv": "^16.0.3"
   }
 }
 

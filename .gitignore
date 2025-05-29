@@ -7,3 +7,6 @@ node_modules/
 
 # Opcionalmente, puedes ignorar el archivo de lock si no quieres mantener las versiones exactas de dependencias
 package-lock.json
+
+# Archivos de entorno
+.env
